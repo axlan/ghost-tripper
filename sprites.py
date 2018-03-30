@@ -33,24 +33,38 @@ def main():
     with open(args.cpac_file, 'rb') as cpac_2d:
         data_sections = parse_cpac(cpac_2d)
 
-    for n, section in enumerate(data_sections):
-        output = open(args.out_dir + '/{0}'.format(n), 'wb')
-        output.write(section)
 
+    # #Capcom
+    # pallete_offset = 0x2d80
+    # pallete_size = 0x200
+    # tile_offset = 0xa00 # Pointer found at 0x14
+    # screen_offset = 0xa00 + 0xde8
+
+    # # MobiClip
+    # pallete_offset = 0x2d80
+    # pallete_size = 0x200
+    # tile_offset = 0x001920
+    # screen_offset = 0x002c78
+
+    pallete_offset = 0x2d80
+    pallete_size = 0x200
+    tile_offset = 0x002e74
+    screen_offset = 0x0033f0
 
     # Rip a palette that goes with the Capcom logo
     data = BytesIO(data_sections[0])
-    data.seek(0x2d80)
-    capcom_palette = palette.parse(data.read(0x200))
+    data.seek(pallete_offset)
+    capcom_palette = palette.parse(data.read(pallete_size))
 
     # Rip the Capcom logo
     data = BytesIO(data_sections[2])
-    data.seek(0xa00)  # Pointer found at 0x14
+    data.seek(tile_offset)
 
     tiles = decompress(data)
     tiles = split_into_tiles(tiles)
 
-    data.seek(0xa00 + 0xde8)
+    tiles = tiles
+    data.seek(screen_offset)
     screen = Screen(decompress(data))
 
     image = screen.image([capcom_palette], tiles)
