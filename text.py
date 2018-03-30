@@ -2,6 +2,7 @@ from collections import namedtuple
 from io import BytesIO
 from struct import unpack
 from sys import argv
+import argparse
 
 from lzss3 import decompress
 from tables import *
@@ -57,42 +58,53 @@ def message_iterator(data, pointer):
         else:
             yield char
 
+def main():
 
-with open(argv[1], 'rb') as text_file:
-    data = decompress(text_file)
+    parser = argparse.ArgumentParser()
+    parser.add_argument("script_file",
+                    help="Target *.xml.lz file")
+    # parser.add_argument("-a", "--annotate", action="store_true",
+    #                     help="Replace ")
+    args = parser.parse_args()
 
-data = BytesIO(data)
+    with open(args.script_file, 'rb') as text_file:
+        data = decompress(text_file)
 
-assert data.read(4) == b'1LMG'
+    data = BytesIO(data)
 
-# Seek to and read message pointers
-data.seek(8)
-pointers_offset, = unpack('<H', data.read(2))
-data.seek(pointers_offset + 0x34)
+    assert data.read(4) == b'1LMG'
 
-assert data.read(4) == b'\x2a\x00\x00\x00'  # Not sure of the significance
+    # Seek to and read message pointers
+    data.seek(8)
+    pointers_offset, = unpack('<H', data.read(2))
+    data.seek(pointers_offset + 0x34)
 
-message_count, = unpack('<L', data.read(4))
-messages = []
-Message = namedtuple('Message', ['label_offset', 'message_pointer'])
+    assert data.read(4) == b'\x2a\x00\x00\x00'  # Not sure of the significance
 
-for m in range(message_count):
-    messages.append(
-        Message( *unpack('<LL', data.read(8)) )
-    )
+    message_count, = unpack('<L', data.read(4))
+    messages = []
+    Message = namedtuple('Message', ['label_offset', 'message_pointer'])
 
-labels_pointer = data.tell()  # XXX Can I actually *find* this anywhere?
+    for m in range(message_count):
+        messages.append(
+            Message( *unpack('<LL', data.read(8)) )
+        )
 
-for message in messages:
-    # Find the label and print it as a header
-    label = get_label(data, labels_pointer + message.label_offset)
+    labels_pointer = data.tell()  # XXX Can I actually *find* this anywhere?
 
-    print(label)
-    print('=' * len(label))
+    for message in messages:
+        # Find the label and print it as a header
+        label = get_label(data, labels_pointer + message.label_offset)
+
+        print(label)
+        print('=' * len(label))
 
 
-    # Extract the actual message
-    message = message_iterator(data, message.message_pointer)
-    message = decode_message(message)
+        # Extract the actual message
+        message = message_iterator(data, message.message_pointer)
+        message = decode_message(message)
 
-    print(message, end='\n\n')
+        print(message, end='\n\n')
+
+if __name__ == '__main__':
+    main()

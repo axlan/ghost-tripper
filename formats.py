@@ -2,7 +2,7 @@ from collections import namedtuple
 from operator import itemgetter
 from struct import unpack
 
-from construct import *
+from construct import Adapter, Container, GreedyRange, ULInt16
 
 ### Sprite-related structs
 
@@ -41,10 +41,10 @@ class NTFSAdapter(Adapter):
 
 
 ntfp = NTFPAdapter(ULInt16('color'))
-palette = GreedyRepeater(ntfp)
+palette = GreedyRange(ntfp)
 
 ntfs = NTFSAdapter(ULInt16('tile'))
-ntfs_repeater = GreedyRepeater(ntfs)
+ntfs_repeater = GreedyRange(ntfs)
 
 class Screen():
     """A sprite that takes up the entire screen.
