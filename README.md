@@ -158,7 +158,7 @@ screen: 0x300 - 768 entries
     # tile_offset   0x000F20 = 0x000DE8 + 0x000138
     # screen_offset 0x002c78 = 0x000F20 + 0x001D58
 
-                    ct_o     ct_s     cs_o      cs_s    mt_o      mt_s    ms_o     ms_s      ?t_o    ?t_s     ?s_o    ?s_s
+                    ct_o     ct_s     cs_o      cs_s    mt_o      mt_s    ms_o     ms_s      nt_o    nt_s     ns_o    ns_s       ot       st        
 00000000 00000000 00000000 E80D0080 E80D0000 38010080 200F0000 58130080 78220000 FC010080 74240000 7C050080 F0290000 1C010080 0C2B0000 E43D0080 F0680000 00060000 F06E0000 34380080 24A70000 00060000
 
 
@@ -174,4 +174,12 @@ screen_offset = 0x29f0 + 0xa00
 pallet: 0x200
 tiles = 3072 - 48 tiles WRONG! Turns out these tiles are 4bit instead of 8bit so there are 96 tiles
 
+  o          s       o        s        o          s       o        s
+0C2B0000 E43D0080 F0680000 00060000 F06E0000 34380080 24A70000 00060000
 
+
+
+0x00350c: 0x00c000-U 0x0ae9b4-C 0x00011c gap
+0x0078f0: 0x00c000-U 0x0aa5d0-C 0x0043e4 gap
+0x00bd24: 0x00c000-U 0x0a619c-C 0x004434 gap
+0x00be0c: 0x000800-U 0x0a60b4-C 0x0000e8 gap

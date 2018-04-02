@@ -1,6 +1,6 @@
 from collections import namedtuple
 from operator import itemgetter
-from struct import unpack
+import struct
 
 from construct import Adapter, Container, GreedyRange, ULInt16
 
@@ -56,6 +56,13 @@ class Screen():
     def __init__(self, source):
         self.ntfs = ntfs_repeater.parse(source)
 
+    def get_max_tile(self):
+        max_tile = 0
+        for tile in self.ntfs:
+            if tile.tile > max_tile:
+                max_tile = tile.tile
+        return max_tile
+
     def image(self, palettes, tiles):
         """Actually put together the sprite."""
         # Prep the pixel matrix; each pixel is pixels[y][x] for easy iterating
@@ -93,15 +100,17 @@ class Screen():
 
 CPACSection = namedtuple('CPACSection', ['offset', 'length'])
 
+ImageSet = namedtuple('ScreenSet', ['tile', 'screen'])
+
 def _cpac_pointers(source):
     source.seek(0)
-    pointers_length, = unpack('<L', source.read(4))
+    pointers_length, = struct.unpack('<L', source.read(4))
 
     source.seek(0)
     source = source.read(pointers_length)
 
     while source:
-        yield CPACSection(*unpack('<LL', source[:8]))
+        yield CPACSection(*struct.unpack('<LL', source[:8]))
         source = source[8:]
 
 def parse_cpac(source):
@@ -112,3 +121,43 @@ def parse_cpac(source):
         sections.append(source.read(section.length))
 
     return sections
+
+def split_into_8x8_tiles_8bit(data):
+    t = []
+    while data:
+        t.append(data[:64])
+        data = data[64:]
+    return t
+
+def split_into_8x8_tiles_4bit(data):
+    t = []
+    while data:
+        raw = data[:32]
+        unpacked = []
+        for val in raw:
+            unpacked.append(val & 0xF)
+            unpacked.append(val >> 4)
+        t.append(unpacked)
+        data = data[32:]
+    return t
+
+def parse_section_data(data):
+    HEADER_SIZE = 24
+    section_header = struct.unpack('<6L', data.read(HEADER_SIZE))
+    data_offset = section_header[5]
+    meta_data = data.read(data_offset - HEADER_SIZE)
+    data = data.read()
+    return meta_data, data
+
+def parse_pallete_meta(data):
+    data = data[4:]
+    entries = []
+    for val in  struct.iter_unpack('<BBH', data):
+        pallete_size = val[1] * 32
+        pallete_offset = val[2] * 32
+        entries.append(CPACSection(pallete_offset, pallete_size))
+    return entries
+
+def parse_screen_meta(data):
+    data = data[8:]
+    return [ImageSet(CPACSection(val[0], val[1]), CPACSection(val[2], val[3] & 0xffff)) for val in struct.iter_unpack('<4L', data)]
