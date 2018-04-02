@@ -43,6 +43,7 @@ def main():
     BYTE_ALIGNMENT = 4
 
     for n, section in enumerate(data_sections):
+        last_offset = 0
         file_size = len(section)
         print("========== Section {0} 0x{1:06x} bytes ".format(n, file_size))
         with open(cpac_dir + '/{0}.bin'.format(n), 'wb') as output:
@@ -53,24 +54,27 @@ def main():
 
         data = BytesIO(section)
         offset = 0
-        while offset < file_size:
-        #while offset < 0x0104d8:
+        #while offset < file_size:
+        while offset < 0x0104d8:
             try:
+                start = data.tell()
                 chunk = decompress(data)
-                size = len(chunk)
+                u_size = len(chunk)
+                c_size = data.tell() - offset
                 offset_str = r'0x{0:06x}'.format(offset)
                 with open(test_dir + '/' + offset_str + '.bin', 'wb') as output:
                     output.write(chunk)
-                print(offset_str + r' {0} bytes'.format(size))
-                if args.skip and size > BYTE_ALIGNMENT:
-                    offset += size
+                print(offset_str + r': 0x{0:06x}-U 0x{1:06x}-C 0x{2:06x} gap'.format(u_size, c_size, offset - last_offset))
+                last_offset = offset
+                if args.skip and c_size > BYTE_ALIGNMENT:
+                    offset += c_size
                 else:
                     offset += BYTE_ALIGNMENT
             except:
                 offset += BYTE_ALIGNMENT
             data.seek(offset)
-        # if n == 2:
-        #     break
+        if n == 2:
+            break
 
 
 if __name__ == '__main__':

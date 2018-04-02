@@ -6,13 +6,24 @@ import os
 from formats import palette, Screen, parse_cpac
 from lzss3 import decompress
 
-def split_into_tiles(data):
+def split_into_8x8_tiles_8bit(data):
     t = []
     while data:
         t.append(data[:64])
         data = data[64:]
     return t
 
+def split_into_8x8_tiles_4bit(data):
+    t = []
+    while data:
+        raw = data[:32]
+        unpacked = []
+        for val in raw:
+            unpacked.append(val & 0xF)
+            unpacked.append(val >> 4)
+        t.append(unpacked)
+        data = data[32:]
+    return t
 
 def main():
 
@@ -40,13 +51,13 @@ def main():
     # tile_offset = 0xa00 # Pointer found at 0x14
     # screen_offset = 0xa00 + 0xde8
 
-    # # MobiClip
-    # pallete_offset = 0x2d80
+    # MobiClip
+    # pallete_offset = 0x2d80 + 0x200
     # pallete_size = 0x200
     # tile_offset = 0x001920
     # screen_offset = 0x002c78
 
-    pallete_offset = 0x2d80
+    pallete_offset = 0x2d80 + 0x400
     pallete_size = 0x200
     tile_offset = 0x002e74
     screen_offset = 0x0033f0
@@ -61,9 +72,9 @@ def main():
     data.seek(tile_offset)
 
     tiles = decompress(data)
-    tiles = split_into_tiles(tiles)
+    #tiles = split_into_8x8_tiles_8bit(tiles)
+    tiles = split_into_8x8_tiles_4bit(tiles)
 
-    tiles = tiles
     data.seek(screen_offset)
     screen = Screen(decompress(data))
 
