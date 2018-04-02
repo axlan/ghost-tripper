@@ -72,13 +72,13 @@ class Screen():
                     x = pixel_num % 8 + tile_x * 8
                     y = pixel_num // 8 + tile_y * 8
                 elif tile.transformation == 1:
-                    # Flip along the x axis
-                    x = pixel_num % 8 + tile_x * 8
-                    y = 7 - pixel_num // 8 + tile_y * 8
-                elif tile.transformation == 2:
                     # Flip along the y axis
                     x = 7 - pixel_num % 8 + tile_x * 8
                     y = pixel_num // 8 + tile_y * 8
+                elif tile.transformation == 2:
+                    # Flip along the x axis
+                    x = pixel_num % 8 + tile_x * 8
+                    y = 7 - pixel_num // 8 + tile_y * 8
                 else:
                     # XXX Is this actually invalid or does it just do both flips?
                     raise ValueError('invalid NTFS transformation')

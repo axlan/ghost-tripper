@@ -172,6 +172,6 @@ tile_offset = 0x2474 + 0xa00
 screen_offset = 0x29f0 + 0xa00
 
 pallet: 0x200
-tiles = 3072 - 48 tiles
+tiles = 3072 - 48 tiles WRONG! Turns out these tiles are 4bit instead of 8bit so there are 96 tiles
 
 
