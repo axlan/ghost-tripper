@@ -40,7 +40,8 @@ def main():
     # pallete_size = 0x200
     # tile_offset = 0x002e74
     # screen_offset = 0x0033f0
-    image_names = ['capcom', 'mobiclip', 'nintendo']
+    #, 'UNKNOWN'
+    image_names = ['capcom', 'mobiclip', 'nintendo', 'title-jp', 'title-en']
 
 
     data = BytesIO(data_sections[0])
@@ -51,27 +52,42 @@ def main():
     screen_meta_raw, screen_data = parse_section_data(data)
     screen_meta = parse_screen_meta(screen_meta_raw)
 
+    screen_idx = 0
+
     for image_num, image_name in enumerate(image_names):
 
         pallete_size = pallete_meta[image_num].length
         pallete_offset = pallete_meta[image_num].offset
-        tile_offset = screen_meta[image_num].tile.offset
-        screen_offset = screen_meta[image_num].screen.offset
 
 
-        # Rip a palette that goes with the Capcom logo
+        # HACK, what's the real palette?
+        if image_num > 2:
+            pallete_size = 0x200
+            pallete_offset = 1 * 0x200
+
+        tile_offset = screen_meta[screen_idx].offset
+        screen_offset = screen_meta[screen_idx+1].offset
+
+
+        # Rip a palette
         data = BytesIO(pallete_data)
         data.seek(pallete_offset)
-        capcom_palette = palette.parse(data.read(pallete_size))
+        image_palette = palette.parse(data.read(pallete_size))
 
-        # Rip the Capcom logo
+
         data = BytesIO(screen_data)
         data.seek(tile_offset)
 
         tiles = decompress(data)
 
-        data.seek(screen_offset)
-        screen = Screen(decompress(data))
+        # Is there another way to figure this out?
+        if len(tiles) < 0xC000:
+            data.seek(screen_offset)
+            screen = Screen(decompress(data))
+        else:
+            data.seek(screen_offset)
+            data = data.read(0x600)
+            screen = Screen(data)
 
         # Is there another way to figure this out?
         if screen.get_max_tile() > len(tiles) / 64:
@@ -79,7 +95,11 @@ def main():
         else:
             tiles = split_into_8x8_tiles_8bit(tiles)
 
-        image = screen.image([capcom_palette], tiles)
+        image = screen.image([image_palette], tiles)
+
+
+        screen_idx+=2
+
 
         with open(args.out_dir + '/'+image_name+'.ppm', 'w') as output:
             # PPM header

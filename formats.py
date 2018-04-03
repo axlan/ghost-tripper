@@ -53,8 +53,18 @@ class Screen():
     headers.
     """
 
-    def __init__(self, source):
-        self.ntfs = ntfs_repeater.parse(source)
+    def __init__(self, source=None):
+        if source:
+            self.ntfs = ntfs_repeater.parse(source)
+        else:
+            NUM_TILES = int(256 * 192 / 64)
+            self.ntfs = []
+            for i in range(NUM_TILES):
+                self.ntfs.append(Container(
+                                    palette=0,
+                                    transformation=0,
+                                    tile=i
+                                ))
 
     def get_max_tile(self):
         max_tile = 0
@@ -99,8 +109,6 @@ class Screen():
 # XXX Turn these into pretty structs, too
 
 CPACSection = namedtuple('CPACSection', ['offset', 'length'])
-
-ImageSet = namedtuple('ScreenSet', ['tile', 'screen'])
 
 def _cpac_pointers(source):
     source.seek(0)
@@ -160,4 +168,4 @@ def parse_pallete_meta(data):
 
 def parse_screen_meta(data):
     data = data[8:]
-    return [ImageSet(CPACSection(val[0], val[1]), CPACSection(val[2], val[3] & 0xffff)) for val in struct.iter_unpack('<4L', data)]
+    return [CPACSection(val[0], val[1] & 0xffff) for val in struct.iter_unpack('<2L', data)]
