@@ -2,8 +2,18 @@ from io import BytesIO
 import argparse
 import os
 
-from formats import palette, Screen, parse_cpac, parse_section_data, split_into_8x8_tiles_4bit, split_into_8x8_tiles_8bit, parse_pallete_meta, parse_screen_meta
+from formats import palette, Screen, parse_cpac, parse_section_data, split_into_8x8_tiles_4bit, split_into_8x8_tiles_8bit, parse_pallete_meta, parse_screen_meta,CPACSection
 from lzss3 import decompress
+
+from collections import namedtuple
+from enum import Enum, auto
+
+
+ImageEntry = namedtuple('ImageEntry', 'image_name palette_entry tile_entry tile_palette_bits screen_entry screen_is_compressed')
+
+class PaletteBits(Enum):
+    FOUR=auto()
+    EIGHT=auto()
 
 def main():
 
@@ -41,7 +51,6 @@ def main():
     # tile_offset = 0x002e74
     # screen_offset = 0x0033f0
     #, 'UNKNOWN'
-    image_names = ['capcom', 'mobiclip', 'nintendo', 'title-jp', 'title-en']
 
 
     data = BytesIO(data_sections[0])
@@ -52,56 +61,69 @@ def main():
     screen_meta_raw, screen_data = parse_section_data(data)
     screen_meta = parse_screen_meta(screen_meta_raw)
 
+    IMAGE_LIST = [
+        ImageEntry('capcom', pallete_meta[0], screen_meta[0], PaletteBits.EIGHT, screen_meta[1], True),
+        ImageEntry('mobiclip', pallete_meta[1], screen_meta[2], PaletteBits.EIGHT, screen_meta[3], True),
+        ImageEntry('nintendo', pallete_meta[2], screen_meta[4], PaletteBits.FOUR, screen_meta[5], True),
+        ImageEntry('title-jp', pallete_meta[1], screen_meta[6], PaletteBits.EIGHT, screen_meta[7], False),
+        ImageEntry('title-en', pallete_meta[1], screen_meta[8], PaletteBits.EIGHT, screen_meta[9], False),
+    ]
+
+
     screen_idx = 0
 
-    for image_num, image_name in enumerate(image_names):
+    for image_meta in IMAGE_LIST:
 
-        pallete_size = pallete_meta[image_num].length
-        pallete_offset = pallete_meta[image_num].offset
+        print("Loading " + image_meta.image_name)
+
+        pallete_size = image_meta.palette_entry.length
+        pallete_offset = image_meta.palette_entry.offset
 
 
-        # HACK, what's the real palette?
-        if image_num > 2:
-            pallete_size = 0x200
-            pallete_offset = 1 * 0x200
-
-        tile_offset = screen_meta[screen_idx].offset
-        screen_offset = screen_meta[screen_idx+1].offset
-
+        tile_offset = image_meta.tile_entry.offset
+        screen_offset = image_meta.screen_entry.offset
 
         # Rip a palette
         data = BytesIO(pallete_data)
         data.seek(pallete_offset)
         image_palette = palette.parse(data.read(pallete_size))
 
+        print("\tPalette 0x{0:06x} {1} bytes {2} colors".format(pallete_offset, pallete_size, len(image_palette)))
+
+
+        print("\tTiles 0x{0:06x} ".format(tile_offset))
 
         data = BytesIO(screen_data)
+
         data.seek(tile_offset)
-
         tiles = decompress(data)
-
         # Is there another way to figure this out?
-        if len(tiles) < 0xC000:
-            data.seek(screen_offset)
-            screen = Screen(decompress(data))
-        else:
-            data.seek(screen_offset)
-            data = data.read(0x600)
-            screen = Screen(data)
-
-        # Is there another way to figure this out?
-        if screen.get_max_tile() > len(tiles) / 64:
+        #if screen.get_max_tile() > len(tiles) / 64:
+        if image_meta.tile_palette_bits == PaletteBits.FOUR:
             tiles = split_into_8x8_tiles_4bit(tiles)
         else:
             tiles = split_into_8x8_tiles_8bit(tiles)
+        max_palette = max([entry for tile in tiles for entry in tile])
+        print("\tTiles 0x{0:06x} {1} 8x8 tiles max palette {2}".format(tile_offset, len(tiles), max_palette))
+
+        data.seek(screen_offset)
+        # Is there another way to figure this out?
+        # if len(tiles) < 0xC000 then compressed
+        if image_meta.screen_is_compressed:
+            data = decompress(data)
+        else:
+            data = data.read(image_meta.screen_entry.length)
+        screen = Screen(data)
+
+        max_tile = max([ntfs.tile for ntfs in screen.ntfs])
+        if len(screen.ntfs) != 256*192/64:
+            raise ValueError('invalid ntfs size {0}'.format(len(screen.ntfs)))
+        print("\tScreen 0x{0:06x} 256x128 max tile {1}".format(screen_offset, max_tile))
 
         image = screen.image([image_palette], tiles)
 
 
-        screen_idx+=2
-
-
-        with open(args.out_dir + '/'+image_name+'.ppm', 'w') as output:
+        with open(args.out_dir + '/'+image_meta.image_name+'.ppm', 'w') as output:
             # PPM header
             output.write(
                 'P3\n'
