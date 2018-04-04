@@ -65,8 +65,8 @@ def main():
         ImageEntry('capcom', pallete_meta[0], screen_meta[0], PaletteBits.EIGHT, screen_meta[1], True),
         ImageEntry('mobiclip', pallete_meta[1], screen_meta[2], PaletteBits.EIGHT, screen_meta[3], True),
         ImageEntry('nintendo', pallete_meta[2], screen_meta[4], PaletteBits.FOUR, screen_meta[5], True),
-        ImageEntry('title-jp', pallete_meta[1], screen_meta[6], PaletteBits.EIGHT, screen_meta[7], False),
-        ImageEntry('title-en', pallete_meta[1], screen_meta[8], PaletteBits.EIGHT, screen_meta[9], False),
+        ImageEntry('title-jp', pallete_meta[11], screen_meta[6], PaletteBits.EIGHT, screen_meta[7], False),
+        ImageEntry('title-en', pallete_meta[11], screen_meta[8], PaletteBits.EIGHT, screen_meta[9], False),
     ]
 
 
