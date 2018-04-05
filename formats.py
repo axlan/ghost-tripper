@@ -76,7 +76,8 @@ class Screen():
     def image(self, palettes, tiles):
         """Actually put together the sprite."""
         # Prep the pixel matrix; each pixel is pixels[y][x] for easy iterating
-        pixels = [[None for x in range(256)] for y in range(192)]
+        y_len = int(len(self.ntfs) / 4)
+        pixels = [[None for x in range(256)] for y in range(y_len)]
 
         for tile_num, tile in enumerate(self.ntfs):
             tile_x = tile_num % 32
@@ -96,6 +97,9 @@ class Screen():
                     # Flip along the x axis
                     x = pixel_num % 8 + tile_x * 8
                     y = 7 - pixel_num // 8 + tile_y * 8
+                elif tile.transformation == 3:
+                    x = 7 - pixel_num % 8 + tile_x * 8
+                    y = 7 - pixel_num // 8 + tile_y * 8
                 else:
                     # XXX Is this actually invalid or does it just do both flips?
                     raise ValueError('invalid NTFS transformation')
@@ -109,6 +113,8 @@ class Screen():
 # XXX Turn these into pretty structs, too
 
 CPACSection = namedtuple('CPACSection', ['offset', 'length'])
+
+ScreenSection = namedtuple('ScreenSection', ['offset', 'length', 'flag1', 'flag2'])
 
 def _cpac_pointers(source):
     source.seek(0)
@@ -168,4 +174,21 @@ def parse_pallete_meta(data):
 
 def parse_screen_meta(data):
     data = data[8:]
-    return [CPACSection(val[0], val[1] & 0xffff) for val in struct.iter_unpack('<2L', data)]
+    return [ScreenSection(val[0] & 0x7FFFFFFF, val[1] & 0x7FFFFFFF, bool(val[0] & 0x80000000), bool(val[1] & 0x80000000)) for val in struct.iter_unpack('<2L', data)]
+
+
+def image_to_ppm(image, out_fd):
+    y_len = len(image)
+    x_len = len(image[0])
+    # PPM header
+    out_fd.write(
+        'P3\n'
+        '{} {}\n'
+        '31\n'.format(x_len, y_len)
+    )
+
+    for row in image:
+        for pixel in row:
+            print(pixel.r, pixel.g, pixel.b, file=out_fd, end='  ')
+
+        print(file=out_fd)
