@@ -60,11 +60,30 @@ def explore_compressed_sections(data_section, skip, file_size, out_dir):
 
 
 
+def explore_3(data_section, out_dir):
+    screen_meta_raw, screen_data = parse_section_data(data_section)
+    screen_meta = parse_screen_meta(screen_meta_raw)
+    data = BytesIO(screen_data)
+    with open(out_dir + '/meta.txt', 'w') as meta_fd:
+        for n, entry in enumerate(screen_meta):
+            data.seek(entry.offset)
+            if entry.flag2 or entry.length > 0x5000:
+                chunk = decompress(data)
+            else:
+                chunk = data.read(entry.length)
+            if chunk[:4] == b'RNAN':
+                ext = 'rnan'
+            else:
+                ext = 'bin'
+            with open(out_dir + '/s3_{:04}.{}'.format(n, ext), 'wb') as data_fd:
+                data_fd.write(chunk)
+            print('{0:04} 0x{1.offset:06x} {1.flag1:d} 0x{2:06x} {1.flag2:d} {3:4}'.format(n, entry, len(chunk), ext), file=meta_fd)
+
+
 def explore_2(data_section, out_dir):
     screen_meta_raw, screen_data = parse_section_data(data_section)
     screen_meta = parse_screen_meta(screen_meta_raw)
     data = BytesIO(screen_data)
-    print (out_dir + '/meta.txt')
     with open(out_dir + '/meta.txt', 'w') as meta_fd:
         for n, entry in enumerate(screen_meta):
             data.seek(entry.offset)
@@ -117,7 +136,10 @@ def main():
             #explore_palettes(data, test_dir)
             pass
         elif n == 2:
-            explore_2(data, test_dir)
+            #explore_2(data, test_dir)
+            pass
+        elif n == 3:
+            explore_3(data, test_dir)
             pass
         else:
             #explore_compressed_sections(data, args.skip, file_size, test_dir)
