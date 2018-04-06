@@ -77,6 +77,27 @@ def explore_2(data_section, out_dir):
             print('{0:04} 0x{1.offset:06x} {1.flag1:d} 0x{2:06x} {1.flag2:d}'.format(n, entry, len(chunk)), file=meta_fd)
 
 
+def explore_3(data_section, out_dir):
+    screen_meta_raw, screen_data = parse_section_data(data_section)
+    screen_meta = parse_screen_meta(screen_meta_raw)
+    data = BytesIO(screen_data)
+    print (out_dir + '/meta.txt')
+    with open(out_dir + '/meta.txt', 'w') as meta_fd:
+        for n, entry in enumerate(screen_meta):
+            data.seek(entry.offset)
+            if entry.flag2:
+                chunk = decompress(data)
+            else:
+                chunk = data.read(entry.length)
+            if chunk[:4] == b'RNAN':
+                ext = 'rnan'
+            else:
+                ext = 'bin'
+            with open(out_dir + '/s3_{:04}.{}'.format(n, ext), 'wb') as data_fd:
+                data_fd.write(chunk)
+            print('{0:04} 0x{1.offset:06x} {1.flag1:d} 0x{2:06x} {1.flag2:d} {3:4}'.format(n, entry, len(chunk), ext), file=meta_fd)
+
+
 def main():
 
     parser = argparse.ArgumentParser()
@@ -117,45 +138,14 @@ def main():
             #explore_palettes(data, test_dir)
             pass
         elif n == 2:
-            explore_2(data, test_dir)
+            #explore_2(data, test_dir)
+            pass
+        elif n == 3:
+            explore_3(data, test_dir)
             pass
         else:
             #explore_compressed_sections(data, args.skip, file_size, test_dir)
             pass
-
-        # BYTE_ALIGNMENT = 4
-        # last_offset = 0
-        # file_size = len(section)
-        # print("========== Section {0} 0x{1:06x} bytes ".format(n, file_size))
-        # with open(cpac_dir + '/{0}.bin'.format(n), 'wb') as output:
-        #     output.write(section)
-
-        # test_dir = cpac_dir + '/{0}'.format(n)
-        # mkdir(test_dir)
-
-        # data = BytesIO(section)
-        # offset = 0
-        # #while offset < file_size:
-        # while offset < 0x0104d8:
-        #     try:
-        #         start = data.tell()
-        #         chunk = decompress(data)
-        #         u_size = len(chunk)
-        #         c_size = data.tell() - offset
-        #         offset_str = r'0x{0:06x}'.format(offset)
-        #         with open(test_dir + '/' + offset_str + '.bin', 'wb') as output:
-        #             output.write(chunk)
-        #         print(offset_str + r': 0x{0:06x}-U 0x{1:06x}-C 0x{2:06x} gap'.format(u_size, c_size, offset - last_offset))
-        #         last_offset = offset
-        #         if args.skip and c_size > BYTE_ALIGNMENT:
-        #             offset += c_size
-        #         else:
-        #             offset += BYTE_ALIGNMENT
-        #     except:
-        #         offset += BYTE_ALIGNMENT
-        #     data.seek(offset)
-        # if n == 2:
-        #     break
 
 
 if __name__ == '__main__':

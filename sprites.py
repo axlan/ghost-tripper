@@ -21,32 +21,29 @@ class PaletteBits(Enum):
 
 color = namedtuple('Color', 'r g b a')
 
+def dummy_palette2():
+    return [
+    color(0xFF, 0x00, 0xFF, True), color(0x00, 0xFF, 0x00, True), color(0xFF, 0x00, 0x00, True), color(0x00, 0x00, 0xFF, True),
+    color(0xFF, 0x00, 0xFF, True), color(0xFF, 0xFF, 0xFF, True), color(0x00, 0xFF, 0xFF, True), color(0xFF, 0xAA, 0x00, True),
+    color(0xAA, 0xFF, 0x00, True), color(0x00, 0xAA, 0xFF, True), color(0x00, 0xFF, 0xAA, True), color(0xAA, 0x00, 0xAA, True),
+    color(0xAA, 0xAA, 0x00, True), color(0xAA, 0xAA, 0xAA, True), color(0xFF, 0x00, 0xAA, True), color(0xAA, 0x00, 0xFF, True),
+    ]
+
+
 def dummy_gray_palette():
-    palette = []
+    gray_palette = []
     for i in range(256):
-        palette.append(color(
+        gray_palette.append(color(
             r = i // 8,
             g = i // 8,
             b = i // 8,
             a = True
         ))
-    return palette
+    return gray_palette
 
 
-def main():
-
-    parser = argparse.ArgumentParser()
-    parser.add_argument("cpac_file",
-                    help="Target cpac_2d.bin file")
-    parser.add_argument("-o","--out_dir",
-                    help="directory for output files", default="out")
-    # parser.add_argument("-a", "--annotate", action="store_true",
-    #                     help="Replace ")
-    args = parser.parse_args()
-
-    if not os.path.exists(args.out_dir):
-        os.makedirs(args.out_dir)
-
+# Extract Full Screen Images From cpac_2d.bin Partition 2
+def extract_cpac2_images(args):
     # Dump cpac_2d.bin's sections to separate files for easier individual
     # staring-down
     with open(args.cpac_file, 'rb') as cpac_2d:
@@ -147,6 +144,71 @@ def main():
 
         with open(args.out_dir + '/'+image_meta.image_name+'.ppm', 'w') as output:
             image_to_ppm(image, output)
+
+# Extract Animations From cpac_2d.bin Partition 3
+def extract_cpac3_images(args):
+    with open(args.cpac_file, 'rb') as cpac_2d:
+        data_sections = parse_cpac(cpac_2d)
+
+    from archives import SubArchive, SplitArchive, CellBank, GraphicsBank
+
+    subArchive = SubArchive(data_sections[3])
+
+    pixelsTableId = 14692
+    pixelsDataId = 14694
+    cellBankId = 14693
+    cellId = 0
+
+
+    subsub =  SplitArchive(subArchive.open(pixelsTableId), subArchive.open(pixelsDataId))
+
+    cellBank = CellBank(subArchive.open(cellBankId), subsub.length())
+
+
+    tileData=subsub.open(cellId)
+
+    tileSet= GraphicsBank()
+    tileSet.bitDepth=4
+    tileSet.parseTiled(tileData, 0, len(tileData))
+
+    cell=cellBank.cells[cellId]
+
+    pal = dummy_palette2()
+
+    obj = cell.rend(pal,tileSet,False,True)
+
+    # obj.x=180;
+    # obj.y=150;
+    # out.addChild(obj);
+
+    # data = BytesIO(screen_data)
+    # data.seek(screen_meta[pixelsTableId].offset)
+    # subsub_table = decompress(data)
+
+    # data = BytesIO(screen_data)
+    # data.seek(screen_meta[pixelsDataId].offset)
+    # subsub_data = decompress(data)
+
+
+
+
+
+def main():
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("cpac_file",
+                    help="Target cpac_2d.bin file")
+    parser.add_argument("-o","--out_dir",
+                    help="directory for output files", default="out")
+    # parser.add_argument("-a", "--annotate", action="store_true",
+    #                     help="Replace ")
+    args = parser.parse_args()
+
+    if not os.path.exists(args.out_dir):
+        os.makedirs(args.out_dir)
+
+    #extract_cpac2_images(args)
+    extract_cpac3_images(args)
 
 if __name__ == '__main__':
     main()

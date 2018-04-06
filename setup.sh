@@ -3,6 +3,6 @@
 mkdir /tmp/GT;
 
 # Change the path to Ghost Trick as needed
-ndsfuse ~/Games/ROMs/Nintendo/DS/Untrimmed/Ghost\ Trick\ \(U\).nds /tmp/GT;
+../ndsfuse/ndsfuse ../5478_-_Ghost_Trick_-_Phantom_DetectiveUSA_NDS-XPA.nds /tmp/GT;
 
 mkdir /tmp/cpac;
