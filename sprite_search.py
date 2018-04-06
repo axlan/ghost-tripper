@@ -96,6 +96,21 @@ def explore_2(data_section, out_dir):
             print('{0:04} 0x{1.offset:06x} {1.flag1:d} 0x{2:06x} {1.flag2:d}'.format(n, entry, len(chunk)), file=meta_fd)
 
 
+def explore_4(data_section, out_dir):
+    screen_meta_raw, screen_data = parse_section_data(data_section)
+    screen_meta = parse_screen_meta(screen_meta_raw)
+    data = BytesIO(screen_data)
+    with open(out_dir + '/meta.txt', 'w') as meta_fd:
+        for n, entry in enumerate(screen_meta):
+            data.seek(entry.offset)
+            if entry.flag2:
+                chunk = decompress(data)
+            else:
+                chunk = data.read(entry.length)
+            with open(out_dir + '/s4_{:04}.bin'.format(n), 'wb') as data_fd:
+                data_fd.write(chunk)
+            print('{0:04} 0x{1.offset:06x} {1.flag1:d} 0x{2:06x} {1.flag2:d}'.format(n, entry, len(chunk)), file=meta_fd)
+
 def main():
 
     parser = argparse.ArgumentParser()
@@ -139,7 +154,10 @@ def main():
             #explore_2(data, test_dir)
             pass
         elif n == 3:
-            explore_3(data, test_dir)
+            #explore_3(data, test_dir)
+            pass
+        elif n == 4:
+            explore_4(data, test_dir)
             pass
         else:
             #explore_compressed_sections(data, args.skip, file_size, test_dir)
