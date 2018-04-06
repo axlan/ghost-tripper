@@ -177,17 +177,10 @@ class Tile(object):
             for x in range(self.width):
                 color=self.pixels[index]
                 index += 1
-                if(color==0 and useTransparency):
-                    bmd.putpixel((x,y), (0,0xFF,0xFF,0))
-                else:
-                    val = palette[color+paletteOffset*16]
-                    r = (val >> 16) & 0xFF
-                    g = (val >> 8) & 0xFF
-                    b = val & 0xFF
-                    if useTransparency:
-                        bmd.putpixel((x,y),(r,g,b,0xFF))
-                    else:
-                        bmd.putpixel((x,y), (r,g,b))
+
+                val = palette[color+paletteOffset*16]
+                bmd.putpixel((x,y),val)
+                print ((x,y),val)
 
         bmd.save("TEST.png", "PNG")
         exit(1)
