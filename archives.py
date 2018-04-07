@@ -78,7 +78,7 @@ class SubArchive(object):
                          bool(val[0] & self.__FLAG_MASK)) for val in struct.iter_unpack('<2L', self.data.read(size))
             ]
 
-
+    # Doesn't match behavior in Ghost Trick cpak 0 palettes
     def __readYEKP(self, tableStart):
         tableStart += 1
         self.data.seek(tableStart)
@@ -89,6 +89,7 @@ class SubArchive(object):
                          bool(val[0] & self.__FLAG_MASK),
                          None) for val in struct.iter_unpack('<L', self.data.read(size))
             ]
+
 
 
 # Ported from https://app.assembla.com/spaces/sdat4as/subversion/source/HEAD/Nitro/GhostTrick/SplitArchive.as
@@ -143,7 +144,7 @@ class Tile(object):
             for y in range(self.height):
                 for x in range(self.width):
                     index= x + y * self.width
-                    self.pixels[index] = data.read(1)
+                    self.pixels[index] = readUnsignedByte(data)
         else:
             raise ValueError('Only 4 and 8 bit tiles are supported!')
 
@@ -186,9 +187,6 @@ class Tile(object):
         # ? if(color==0 && useTransparency)
         buffer = [palette[color+paletteOffset*16] for color in self.pixels]
         bmd.putdata(buffer)
-
-        bmd.save("TEST.png", "PNG")
-        exit(1)
 
         # rendered=bmd
         # renderedPalette=palette
@@ -382,7 +380,7 @@ class GraphicsBank(object):
         # }
 
     def renderTileOam(self, oam,palette,subImages,useTransparency):
-        spr = Image.new('RGB', (1024,1024))
+
 
         if self.bitDepth==8:
             tileIndex=oam.tileIndex>>1
@@ -392,8 +390,10 @@ class GraphicsBank(object):
         baseX=tileIndex%self.tilesX
         baseY=tileIndex//self.tilesX
 
-        yTiles=int(oam.height/self.tiles[0].height)
-        xTiles=int(oam.width/self.tiles[0].width)
+        yTiles=int(oam.height/Tile.height)
+        xTiles=int(oam.width/Tile.width)
+
+        spr = Image.new('RGB', (oam.width, oam.height))
 
         if(self.tilesX==0xFFFF):
             subTileWidth=xTiles
@@ -412,7 +412,8 @@ class GraphicsBank(object):
                 # tileR.x=Tile.width*x
                 # tileR.y=Tile.height*y
                 # spr.addChild(tileR)
-                self.renderTile(subTileIndex,palette,oam.paletteIndex,useTransparency)
+                tileR = self.renderTile(subTileIndex,palette,oam.paletteIndex,useTransparency)
+                spr.paste(tileR, (x, y))
 
         return spr
 
@@ -783,14 +784,10 @@ class CellOam(OamTile):
 #         */
     def rend(self,palette,tiles,useSubImages,useTranparency):
         oamR = super(CellOam, self).rend(palette,tiles,useSubImages,useTranparency)
-        oamR.x=self.x
-        oamR.y=self.y
         if(self.xFlip):
-            oamR.x+=self.width
-            oamR.scaleX=-1
+            oamR = oamR.transpose(Image.FLIP_LEFT_RIGHT)
         if(self.yFlip):
-            oamR.y+=self.height
-            oamR.scaleY=-1
+            oamR = oamR.transpose(Image.FLIP_TOP_BOTTOM)
         return oamR
 
 #         /** Draws a rectangle that represents the OAM
@@ -944,7 +941,7 @@ class Cell(object):
 
         for oam in self.oams:
             oamR=oam.rend(palette,tiles,useSubImages,useTranparency)
-            #spr.addChildAt(oamR,0)
+            spr.paste(oamR, (oam.x+256, oam.y+256))
 
         return spr
 

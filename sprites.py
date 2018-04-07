@@ -177,6 +177,8 @@ def extract_cpac3_images(args):
 
     obj = cell.rend(pal,tileSet,False,True)
 
+    obj.save(args.out_dir + "/TEST.png", "PNG")
+
     # obj.x=180;
     # obj.y=150;
     # out.addChild(obj);
@@ -190,8 +192,48 @@ def extract_cpac3_images(args):
     # subsub_data = decompress(data)
 
 
+def readPalette(data):
+    size = len(data) / 2
+    pal = []
+    for i in range(size):
+        pal.append(
+            r=color & 0x1f,
+            g=color >> 5 & 0x1f,
+            b=color >> 10 & 0x1f,
+            a=bool(color >> 15)
+        )
+    return pal
 
 
+
+def extract_cpac2_images2(args):
+    with open(args.cpac_file, 'rb') as cpac_2d:
+        data_sections = parse_cpac(cpac_2d)
+    from archives import SubArchive, GraphicsBank
+    from tile_mapped_screen import TileMappedScreen
+    from palette_archive import PaletteArchive
+    paletteArchive = PaletteArchive(data_sections[0])
+    screenArchive = SubArchive(data_sections[2])
+
+    IMAGE_LIST = [
+        ImageEntry('capcom', 1, 1, 8, 2),
+        ImageEntry('mobiclip', 2, 3, 8, 4),
+        ImageEntry('nintendo', 3, 5, 4, 6),
+        ImageEntry('title-jp', 12, 7, 8, 8),
+        ImageEntry('title-en', 13, 9, 8, 10),
+    ]
+
+    for image_meta in IMAGE_LIST:
+
+        pal = paletteArchive.readPalette(image_meta.palette_entry)
+        tileData = screenArchive.open(image_meta.tile_entry)
+        screenData = screenArchive.open(image_meta.screen_entry)
+        screen = TileMappedScreen(screenData, 32)
+        tileSet = GraphicsBank()
+        tileSet.bitDepth = image_meta.tile_palette_bits
+        tileSet.parseTiled(tileData, 0, len(tileData))
+        obj = screen.render(tileSet, pal)
+        obj.save(args.out_dir + '/'+ image_meta.image_name + ".png", "PNG")
 
 def main():
 
@@ -208,6 +250,7 @@ def main():
         os.makedirs(args.out_dir)
 
     #extract_cpac2_images(args)
+    #extract_cpac2_images2(args)
     extract_cpac3_images(args)
 
 if __name__ == '__main__':
