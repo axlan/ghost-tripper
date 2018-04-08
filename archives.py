@@ -413,7 +413,7 @@ class GraphicsBank(object):
                 # tileR.y=Tile.height*y
                 # spr.addChild(tileR)
                 tileR = self.renderTile(subTileIndex,palette,oam.paletteIndex,useTransparency)
-                spr.paste(tileR, (x, y))
+                spr.paste(tileR, (Tile.width * x, Tile.height * y))
 
         return spr
 

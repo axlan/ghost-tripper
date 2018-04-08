@@ -171,13 +171,17 @@ def extract_cpac3_images(args):
     tileSet.bitDepth=4
     tileSet.parseTiled(tileData, 0, len(tileData))
 
-    cell=cellBank.cells[cellId]
-
     pal = dummy_palette2()
 
-    obj = cell.rend(pal,tileSet,False,True)
 
+
+    cell=cellBank.cells[cellId]
+    obj = cell.rend(pal,tileSet,False,True)
     obj.save(args.out_dir + "/TEST.png", "PNG")
+
+    # for n, cell in enumerate(cellBank.cells):
+    #     obj = cell.rend(pal,tileSet,False,True)
+    #     obj.save(args.out_dir + "/TEST{:03}.png".format(n), "PNG")
 
     # obj.x=180;
     # obj.y=150;
