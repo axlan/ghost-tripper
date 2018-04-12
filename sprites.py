@@ -2,11 +2,17 @@ from io import BytesIO
 import argparse
 import os
 
+from nds_formats.data_structures.archives import SubArchive, SplitArchive
+from nds_formats.data_structures.tiles import GraphicsBank
+from nds_formats.data_structures.cells import CellBank
+from nds_formats.data_structures.tile_mapped_screen import TileMappedScreen
+from nds_formats.data_structures.palette_archive import PaletteArchive
+
 from formats import palette, Screen, parse_cpac, parse_section_data, \
                     split_into_8x8_tiles_4bit, split_into_8x8_tiles_8bit, \
                     parse_pallete_meta, parse_screen_meta,CPACSection, \
                     image_to_ppm
-from lzss3 import decompress
+from nds_formats.lzss3 import decompress
 
 from collections import namedtuple
 from enum import Enum, auto
@@ -150,8 +156,6 @@ def extract_cpac3_images(args):
     with open(args.cpac_file, 'rb') as cpac_2d:
         data_sections = parse_cpac(cpac_2d)
 
-    from archives import SubArchive, SplitArchive, CellBank, GraphicsBank
-
     subArchive = SubArchive(data_sections[3])
 
     pixelsTableId = 14692
@@ -213,9 +217,7 @@ def readPalette(data):
 def extract_cpac2_images2(args):
     with open(args.cpac_file, 'rb') as cpac_2d:
         data_sections = parse_cpac(cpac_2d)
-    from archives import SubArchive, GraphicsBank
-    from tile_mapped_screen import TileMappedScreen
-    from palette_archive import PaletteArchive
+
     paletteArchive = PaletteArchive(data_sections[0])
     screenArchive = SubArchive(data_sections[2])
 

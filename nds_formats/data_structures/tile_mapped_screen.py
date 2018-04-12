@@ -1,6 +1,6 @@
 from construct import Adapter, Container, GreedyRange, ULInt16
 from PIL import Image
-from archives import Tile
+from nds_formats.data_structures.tiles import Tile
 
 class NTFSAdapter(Adapter):
     """A single tile in a screen.
