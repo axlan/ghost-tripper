@@ -190,9 +190,10 @@ class Cell(object):
 
         for oam in self.oams:
             oamR=oam.rend(palette,tiles,useSubImages,useTranparency)
-            spr.paste(oamR, (oam.x+256, oam.y+256))
-
-        return spr
+            spr.paste(oamR, (oam.x+512, oam.y+512))
+        from nds_formats.utils import find_edges
+        edges = find_edges(spr, (0,0,0))
+        return spr.crop(edges)
 
     # /** Draws a rectangle for each object in the cell
     # @param boxColor The stroke color for the rectangles
