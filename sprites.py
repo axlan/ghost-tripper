@@ -1,6 +1,8 @@
 from io import BytesIO
 import argparse
 import os
+from collections import namedtuple
+from enum import Enum, auto
 
 from nds_formats.data_structures.archives import SubArchive, SplitArchive
 from nds_formats.data_structures.tiles import GraphicsBank
@@ -13,9 +15,8 @@ from formats import palette, Screen, parse_cpac, parse_section_data, \
                     parse_pallete_meta, parse_screen_meta,CPACSection, \
                     image_to_ppm
 from nds_formats.lzss3 import decompress
+from nds_formats.utils import mkdir
 
-from collections import namedtuple
-from enum import Enum, auto
 
 
 ImageEntry = namedtuple('ImageEntry', 'image_name palette_entry tile_entry tile_palette_bits screen_entry')
@@ -158,30 +159,39 @@ def extract_cpac3_images(args):
 
     subArchive = SubArchive(data_sections[3])
 
-    pixelsTableId = 14692
-    pixelsDataId = 14694
-    cellBankId = 14693
-    cellId = 0
+
+    out_dir = args.out_dir+'/cpac3_cells'
+
+    mkdir(out_dir)
+
+    # chicken 14692
+    start_offset = 7942
+    stop_offset = 11700
+
+    for i in range(start_offset, stop_offset, 3):
+        pixelsTableId = i
+        cellBankId = i + 1
+        pixelsDataId = i + 2
+        cellId = 0
 
 
-    subsub =  SplitArchive(subArchive.open(pixelsTableId), subArchive.open(pixelsDataId))
+        subsub =  SplitArchive(subArchive.open(pixelsTableId), subArchive.open(pixelsDataId))
 
-    cellBank = CellBank(subArchive.open(cellBankId), subsub.length())
-
-
-    tileData=subsub.open(cellId)
-
-    tileSet= GraphicsBank()
-    tileSet.bitDepth=4
-    tileSet.parseTiled(tileData, 0, len(tileData))
-
-    pal = dummy_palette2()
+        cellBank = CellBank(subArchive.open(cellBankId), subsub.length())
 
 
+        tileData=subsub.open(cellId)
 
-    cell=cellBank.cells[cellId]
-    obj = cell.rend(pal,tileSet,False,True)
-    obj.save(args.out_dir + "/TEST.png", "PNG")
+        tileSet= GraphicsBank()
+        tileSet.bitDepth=4
+        tileSet.parseTiled(tileData, 0, len(tileData))
+
+        pal = dummy_palette2()
+
+        cell=cellBank.cells[cellId]
+        obj = cell.rend(pal,tileSet,False,True)
+        if obj.size[0] > 0:
+            obj.save(out_dir + "/TEST{:05}.png".format(i), "PNG")
 
     # for n, cell in enumerate(cellBank.cells):
     #     obj = cell.rend(pal,tileSet,False,True)

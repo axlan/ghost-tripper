@@ -5,7 +5,8 @@ import os
 from collections import namedtuple
 
 from formats import palette, Screen, parse_cpac, parse_section_data, parse_pallete_meta, image_to_ppm, parse_screen_meta
-from lzss3 import decompress
+from nds_formats.lzss3 import decompress
+from nds_formats.utils import mkdir
 
 def split_into_tiles(data):
     t = []
@@ -13,11 +14,6 @@ def split_into_tiles(data):
         t.append(data[:64])
         data = data[64:]
     return t
-
-def mkdir(path):
-    if not os.path.exists(path):
-        os.makedirs(path)
-
 
 
 def explore_palettes(data_section, out_dir):
